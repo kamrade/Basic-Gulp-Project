@@ -3,3 +3,7 @@ var consoleDebug = require('./modules/console-debug');
 
 sayHello();
 consoleDebug('Me');
+
+var testBabel = () => {
+  console.log('test babel');
+}

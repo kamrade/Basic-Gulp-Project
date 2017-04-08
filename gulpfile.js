@@ -1,5 +1,4 @@
 'use strict';
-
 //var livereload   = require('gulp-livereload');
 var gulp = require('gulp');
 var connect = require('gulp-connect');
@@ -12,6 +11,45 @@ var autoPrefixer = require('gulp-autoprefixer');
 var uncss = require('gulp-uncss');
 var minifyCSS = require('gulp-minify-css');
 var buffer = require('vinyl-buffer');
+
+var sourcemaps = require('gulp-sourcemaps');
+var watchify = require('watchify');
+var babel = require('babelify');
+
+function compile(watch) {
+  var bundler = watchify( browserify('./src/js/main.js', {debug: true}).transform(babel.configure({
+    presets: ["es2015", "react"]
+  })));
+
+  function rebundle() {
+    bundler.bundle()
+      .on('error', function(err) {
+        console.log(err);
+        this.emit('end');
+      })
+      .pipe(vinylSource('build.js'))
+      .pipe(buffer())
+      .pipe(sourcemaps.init({ loadMaps: true }))
+      .pipe(sourcemaps.write('./'))
+      .pipe(gulp.dest('./build'));
+  }
+
+  if (watch) {
+    bundler.on('update', function() {
+      console.log('-> bundling');
+      rebundle();
+    })
+  }
+
+  rebundle();
+}
+
+function watch() {
+  return compile(true);
+}
+
+gulp.task('babel-build', function() { return compile() });
+gulp.task('babel-watch', function() { return watch() });
 
 // html - copy index.html to dev and to dist
 gulp.task('html', function(){
@@ -75,6 +113,8 @@ gulp.task('connect-dev', function() {
     livereload: true
   });
 });
+
+gulp.task('babel', ['babel-watch']);
 
 gulp.task('watch', function(){
   gulp.watch('./src/**/*.html', ['html']);
